@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:attendance_app/widgets/custom_scaffold.dart';
 import 'package:attendance_app/screens/profile_section.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../themes/theme.dart';
 
@@ -13,6 +14,43 @@ class SignInScreen extends StatefulWidget {
 
 class _SignInScreenState extends State<SignInScreen> {
   final _formSignInKey = GlobalKey<FormState>();
+  
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  
+  final TextEditingController _uidTextController = TextEditingController();
+  final TextEditingController _passwordTextController = TextEditingController();
+  
+  Future<void> _signIn() async {
+  	if (_formSignInKey.currentState!.validate()){
+  		try {
+        		
+			UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+			  email: _uIdTextController.text.trim(),
+			  password: _passwordTextController.text.trim(),
+			);
+			// Navigate to Profile Section on successful sign-in
+			Navigator.of(context).pushReplacement(
+			  MaterialPageRoute(builder: (context) => const ProfileScreen()),
+			);
+		      } on FirebaseAuthException catch (e) {
+			String errorMessage;
+			if (e.code == 'user-not-found') {
+			  errorMessage = 'No user found with this email.';
+			} else if (e.code == 'wrong-password') {
+			  errorMessage = 'Incorrect password.';
+			} else {
+			  errorMessage = 'Failed to sign in: ${e.message}';
+			}
+
+			ScaffoldMessenger.of(context).showSnackBar(
+			  SnackBar(content: Text(errorMessage)),
+			);
+		      }
+		    }
+		  }
+ 
+  	
+  	
   bool rememberPassword = true;
   @override
   Widget build(BuildContext context) {
@@ -54,6 +92,7 @@ class _SignInScreenState extends State<SignInScreen> {
                         height: 40.0,
                       ),
                       TextFormField(
+                        controller: _uidTextController,
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Please enter User ID';
@@ -86,6 +125,7 @@ class _SignInScreenState extends State<SignInScreen> {
                       TextFormField(
                         obscureText: true,
                         obscuringCharacter: '*',
+                        controller: _passwordTextController,
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Please enter Password';
@@ -155,14 +195,9 @@ class _SignInScreenState extends State<SignInScreen> {
                           width: double.infinity,
                           child: ElevatedButton(
                             onPressed: () {
-                              if (_formSignInKey.currentState!.validate() &&
-                                  rememberPassword) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Processing Data'),
-                                  ),
-                                );
-                              } else if (!rememberPassword) {
+                            	if(rememberPassword)
+                            	{_signIn();}
+                               else {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
                                       content: Text(
